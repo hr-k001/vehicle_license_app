@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import AppLayout from '../../components/AppLayout';
-import { applyDL, checkLLByEmail } from '../../api/api';
+import { applyDL, checkLLByEmail, getLLStatus } from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -11,12 +11,18 @@ const empty = {
 
 export default function ApplyDL() {
   const { user } = useAuth();
-  const [llStatus, setLlStatus] = useState(null); // null=checking, 'APPROVED'|'PENDING'|'REJECTED'|'NONE'
-  const [llAppNo, setLlAppNo]   = useState('');
-  const [form, setForm]         = useState({ ...empty, email: user?.email || '' });
-  const [result, setResult]     = useState(null);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
+  const [llStatus, setLlStatus]       = useState(null); // null=checking
+  const [llAppNo, setLlAppNo]         = useState('');
+
+  // Fallback: manual LL app number entry
+  const [manualAppNo, setManualAppNo] = useState('');
+  const [manualChecking, setManualChecking] = useState(false);
+  const [manualError, setManualError] = useState('');
+
+  const [form, setForm]   = useState({ ...empty, email: user?.email || '' });
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]   = useState('');
 
   useEffect(() => {
     if (!user?.email) { setLlStatus('NONE'); return; }
@@ -29,6 +35,31 @@ export default function ApplyDL() {
   }, [user]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  // Fallback: user enters their LL application number manually
+  const handleManualVerify = async (e) => {
+    e.preventDefault();
+    const appNo = manualAppNo.trim().toUpperCase();
+    if (!appNo) return;
+    setManualChecking(true); setManualError('');
+    try {
+      const res = await getLLStatus(appNo);
+      const status = res.data?.status;
+      const fetchedAppNo = res.data?.applicationNumber || appNo;
+      if (status === 'APPROVED') {
+        setLlStatus('APPROVED');
+        setLlAppNo(fetchedAppNo);
+      } else if (status === 'PENDING') {
+        setManualError(`Application ${appNo} is still PENDING. Please wait for RTO approval.`);
+      } else if (status === 'REJECTED') {
+        setManualError(`Application ${appNo} was REJECTED. Please re-apply for an LL.`);
+      } else {
+        setManualError(`Application number "${appNo}" not found. Please check and try again.`);
+      }
+    } catch {
+      setManualError('Could not verify application. Please check the number and try again.');
+    } finally { setManualChecking(false); }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,7 +83,7 @@ export default function ApplyDL() {
     );
   }
 
-  // Blocked — no approved LL
+  // Blocked — email check didn't find an approved LL
   if (llStatus !== 'APPROVED') {
     return (
       <AppLayout title="Apply for Driving License" subtitle="US-007 · DL application">
@@ -60,22 +91,71 @@ export default function ApplyDL() {
           <h1>Driving License Application</h1>
           <p>Prerequisite check before you can apply.</p>
         </div>
-        <div className="block-banner">
-          <div className="block-banner-icon">🚫</div>
-          <h3>Approved Learner License Required</h3>
-          <p>
-            {llStatus === 'NONE'
-              ? 'You have not applied for a Learner License yet. Please apply for an LL first and wait for RTO approval before applying for a Driving License.'
-              : llStatus === 'PENDING'
-              ? `Your Learner License application (${llAppNo}) is currently pending. Please wait for the RTO officer to approve it.`
-              : `Your Learner License application was rejected. Please re-apply for an LL and get it approved first.`}
-          </p>
-          <Link to="/app/apply-ll" className="btn btn-blue" style={{ marginTop: 8 }}>Apply for Learner License →</Link>
-        </div>
+
+        {llStatus === 'PENDING' ? (
+          <div className="block-banner">
+            <div className="block-banner-icon">⏳</div>
+            <h3>LL Application Pending</h3>
+            <p>Your Learner License application ({llAppNo}) is currently pending. Please wait for the RTO officer to approve it.</p>
+          </div>
+        ) : llStatus === 'REJECTED' ? (
+          <div className="block-banner">
+            <div className="block-banner-icon">❌</div>
+            <h3>LL Application Rejected</h3>
+            <p>Your Learner License application was rejected. Please re-apply for an LL and get it approved first.</p>
+            <Link to="/app/apply-ll" className="btn btn-blue" style={{ marginTop: 8 }}>Re-apply for LL →</Link>
+          </div>
+        ) : (
+          /* NONE — auto email check found nothing; offer manual verification fallback */
+          <>
+            <div className="block-banner">
+              <div className="block-banner-icon">🚫</div>
+              <h3>Approved Learner License Required</h3>
+              <p>
+                No approved Learner License was found linked to your account email.
+                If you applied for an LL using a different email address, enter your LL application number below to verify.
+              </p>
+              <Link to="/app/apply-ll" className="btn btn-blue" style={{ marginTop: 8 }}>Apply for LL →</Link>
+            </div>
+
+            <div className="form-card" style={{ marginTop: 20 }}>
+              <div className="form-card-header">
+                <div className="form-card-header-icon">🔑</div>
+                <div>
+                  <div className="form-card-header-title">Already have an LL application?</div>
+                  <div className="form-card-header-sub">Enter your application number to verify its status</div>
+                </div>
+              </div>
+              <div className="form-card-body">
+                <form onSubmit={handleManualVerify}>
+                  <div className="form-grid" style={{ gridTemplateColumns: '1fr auto' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>LL Application Number</label>
+                      <input
+                        placeholder="e.g. LL-1001"
+                        value={manualAppNo}
+                        onChange={e => { setManualAppNo(e.target.value); setManualError(''); }}
+                        style={{ textTransform: 'uppercase' }}
+                        required
+                      />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0, justifyContent: 'flex-end', display: 'flex', alignItems: 'flex-end' }}>
+                      <button type="submit" className="btn btn-blue" disabled={manualChecking}>
+                        {manualChecking ? '…Checking' : '🔍 Verify'}
+                      </button>
+                    </div>
+                  </div>
+                  {manualError && <div className="alert alert-danger" style={{ marginTop: 12 }}>⚠ {manualError}</div>}
+                </form>
+              </div>
+            </div>
+          </>
+        )}
       </AppLayout>
     );
   }
 
+  // LL is APPROVED — show DL application form
   return (
     <AppLayout title="Apply for Driving License" subtitle="US-007 · Submit your DL application">
       <div className="page-header">

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import { applyLL } from '../../api/api';
+import { useAuth } from '../../context/AuthContext';
 
-const empty = {
+const emptyForm = (email) => ({
   firstName: '', middleName: '', lastName: '', mobile: '',
-  email: '', placeOfBirth: '', qualification: '', nationality: '', vehicleType: ''
-};
+  email: email || '', placeOfBirth: '', qualification: '', nationality: '', vehicleType: ''
+});
 
 export default function ApplyLL() {
-  const [form, setForm] = useState(empty);
+  const { user } = useAuth();
+  const [form, setForm] = useState(emptyForm(user?.email));
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,7 +27,7 @@ export default function ApplyLL() {
       };
       const res = await applyLL(payload);
       setResult(res.data);
-      setForm(empty);
+      setForm(emptyForm(user?.email));
     } catch (err) {
       setError(err.response?.data?.message || 'Submission failed. Please check your details.');
     } finally { setLoading(false); }
