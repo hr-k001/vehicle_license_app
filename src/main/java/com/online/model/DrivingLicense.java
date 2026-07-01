@@ -1,4 +1,4 @@
-package com.capgemini.model;
+package com.online.model;
 
 import java.util.Date;
 

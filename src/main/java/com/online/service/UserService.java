@@ -1,6 +1,6 @@
-package com.capgemini.service;
+package com.online.service;
 
-import com.capgemini.model.User;
+import com.online.model.User;
 
 public interface UserService {
 

@@ -1,7 +1,7 @@
-package com.capgemini.dao.impl;
+package com.online.dao.impl;
 
-import com.capgemini.dao.UserDao;
-import com.capgemini.model.User;
+import com.online.dao.UserDao;
+import com.online.model.User;
 
 import java.util.HashMap;
 import java.util.Map;

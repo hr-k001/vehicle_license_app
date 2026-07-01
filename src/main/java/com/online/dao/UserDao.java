@@ -1,6 +1,6 @@
-package com.capgemini.dao;
+package com.online.dao;
 
-import com.capgemini.model.User;
+import com.online.model.User;
 
 public interface UserDao {
 

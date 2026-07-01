@@ -1,8 +1,8 @@
-package com.capgemini.service.impl;
+package com.online.service.impl;
 
-import com.capgemini.dao.UserDao;
-import com.capgemini.model.User;
-import com.capgemini.service.UserService;
+import com.online.dao.UserDao;
+import com.online.model.User;
+import com.online.service.UserService;
 
 public class UserServiceImpl implements UserService {
 

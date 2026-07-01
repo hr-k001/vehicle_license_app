@@ -1,10 +1,10 @@
-package com.capgemini;
+package com.online;
 
-import com.capgemini.dao.UserDao;
-import com.capgemini.dao.impl.UserDaoImpl;
-import com.capgemini.model.User;
-import com.capgemini.service.UserService;
-import com.capgemini.service.impl.UserServiceImpl;
+import com.online.dao.UserDao;
+import com.online.dao.impl.UserDaoImpl;
+import com.online.model.User;
+import com.online.service.UserService;
+import com.online.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

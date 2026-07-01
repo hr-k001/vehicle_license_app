@@ -1,4 +1,4 @@
-package com.capgemini.model;
+package com.online.model;
 
 import java.util.Date;
 
@@ -14,6 +14,8 @@ public class Application {
     private ApplicationType type;
     private ApplicationStatus status;
     private Applicant applicant;
+    private Date testDate;
+    private String testResult; // "PASS" or "FAIL" after driving test
 
     public Application() {
     }
@@ -102,5 +104,21 @@ public class Application {
 
     public void setApplicant(Applicant applicant) {
         this.applicant = applicant;
+    }
+
+    public Date getTestDate() {
+        return testDate;
+    }
+
+    public void setTestDate(Date testDate) {
+        this.testDate = testDate;
+    }
+
+    public String getTestResult() {
+        return testResult;
+    }
+
+    public void setTestResult(String testResult) {
+        this.testResult = testResult;
     }
 }

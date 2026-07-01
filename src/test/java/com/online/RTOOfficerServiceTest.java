@@ -1,16 +1,16 @@
-package com.capgemini;
+package com.online;
 
-import com.capgemini.dao.LicenseDao;
-import com.capgemini.dao.RTOOfficerDao;
-import com.capgemini.dao.impl.LicenseDaoImpl;
-import com.capgemini.dao.impl.RTOOfficerDaoImpl;
-import com.capgemini.model.Applicant;
-import com.capgemini.model.Application;
-import com.capgemini.model.ApplicationStatus;
-import com.capgemini.service.LicenseService;
-import com.capgemini.service.RTOOfficerService;
-import com.capgemini.service.impl.LicenseServiceImpl;
-import com.capgemini.service.impl.RTOOfficerServiceImpl;
+import com.online.dao.LicenseDao;
+import com.online.dao.RTOOfficerDao;
+import com.online.dao.impl.LicenseDaoImpl;
+import com.online.dao.impl.RTOOfficerDaoImpl;
+import com.online.model.Applicant;
+import com.online.model.Application;
+import com.online.model.ApplicationStatus;
+import com.online.service.LicenseService;
+import com.online.service.RTOOfficerService;
+import com.online.service.impl.LicenseServiceImpl;
+import com.online.service.impl.RTOOfficerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
