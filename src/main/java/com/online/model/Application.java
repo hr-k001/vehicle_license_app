@@ -1,5 +1,7 @@
 package com.online.model;
 
+import jakarta.validation.Valid;
+
 import java.util.Date;
 
 public class Application {
@@ -13,6 +15,7 @@ public class Application {
 
     private ApplicationType type;
     private ApplicationStatus status;
+    @Valid
     private Applicant applicant;
     private Date testDate;
     private String testResult; // "PASS" or "FAIL" after driving test

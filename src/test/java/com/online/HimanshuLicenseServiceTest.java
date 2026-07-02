@@ -13,6 +13,7 @@ import com.online.service.impl.RTOOfficerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,9 +33,9 @@ class HimanshuLicenseServiceTest {
         rtoOfficerService = new RTOOfficerServiceImpl(rtoOfficerDao);
 
         Applicant applicant = new Applicant(
-                "Himanshu", null, "Kumar", new Date(),
-                "Delhi", "Graduate", "9123456780",
-                "himanshu@example.com", "Indian", "Four Wheeler", null);
+                null, "Himanshu Kumar", "himanshu@example.com",
+                "9123456780", "Delhi", "123456789012",
+                LocalDate.of(1998, 3, 10), null, null);
 
         dlApplication = new Application(null, new Date(), "Online", 500.0,
                 "PAID", null, null, null, applicant);
@@ -44,9 +45,9 @@ class HimanshuLicenseServiceTest {
     // US-007: Applicant applies for driving license -> Application submitted successfully
     @Test
     void testApplyForDL_Success() {
-        Applicant applicant = new Applicant("Test", null, "User", new Date(),
-                "Mumbai", "Graduate", "9999999999",
-                "test@example.com", "Indian", "Two Wheeler", null);
+        Applicant applicant = new Applicant(null, "Test User", "test@example.com",
+                "9999999999", "Mumbai", "987654321012",
+                LocalDate.of(1997, 1, 1), null, null);
         Application app = new Application(null, new Date(), "Online", 500.0,
                 "PAID", null, null, null, applicant);
 
@@ -93,6 +94,9 @@ class HimanshuLicenseServiceTest {
     // US-010: RTO officer approves driving license -> License approved successfully
     @Test
     void testApproveDrivingLicense_LicenseApprovedSuccessfully() {
+        // Must pass the driving test before DL can be approved
+        rtoOfficerService.passTest(dlApplication.getApplicationNumber());
+
         String result = rtoOfficerService.approveDrivingLicense(dlApplication.getApplicationNumber());
         assertEquals("License approved successfully", result);
 

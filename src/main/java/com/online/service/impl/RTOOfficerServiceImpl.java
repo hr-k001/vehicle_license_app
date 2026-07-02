@@ -1,8 +1,11 @@
 package com.online.service.impl;
 
 import com.online.dao.RTOOfficerDao;
+import com.online.model.Applicant;
 import com.online.model.Application;
 import com.online.model.ApplicationStatus;
+import com.online.model.ApplicationType;
+import com.online.service.LicenseService;
 import com.online.service.RTOOfficerService;
 
 import java.util.List;
@@ -10,9 +13,15 @@ import java.util.List;
 public class RTOOfficerServiceImpl implements RTOOfficerService {
 
     private final RTOOfficerDao rtoOfficerDao;
+    private final LicenseService licenseService;
 
     public RTOOfficerServiceImpl(RTOOfficerDao rtoOfficerDao) {
+        this(rtoOfficerDao, null);
+    }
+
+    public RTOOfficerServiceImpl(RTOOfficerDao rtoOfficerDao, LicenseService licenseService) {
         this.rtoOfficerDao = rtoOfficerDao;
+        this.licenseService = licenseService;
     }
 
     // US-005 (Mansidak)
@@ -48,6 +57,9 @@ public class RTOOfficerServiceImpl implements RTOOfficerService {
         }
         application.setStatus(ApplicationStatus.APPROVED);
         rtoOfficerDao.updateApplicationById(applicationNumber, application);
+        if (application.getType() == ApplicationType.DL && licenseService != null) {
+            licenseService.generateLicenseNumber(applicationNumber);
+        }
         return "License approved successfully";
     }
 
@@ -71,6 +83,52 @@ public class RTOOfficerServiceImpl implements RTOOfficerService {
     @Override
     public List<Application> searchApplications(String query) {
         return rtoOfficerDao.searchApplications(query);
+    }
+
+    @Override
+    public String updateApplicationDetails(String applicationNumber, Application updatedApplication) {
+        Application existing = rtoOfficerDao.getApplicationById(applicationNumber);
+        if (existing == null) return "Application not found";
+
+        if (updatedApplication.getStatus() != null) {
+            existing.setStatus(updatedApplication.getStatus());
+        }
+        if (updatedApplication.getRemarks() != null) {
+            existing.setRemarks(updatedApplication.getRemarks());
+        }
+        if (updatedApplication.getModeOfPayment() != null) {
+            existing.setModeOfPayment(updatedApplication.getModeOfPayment());
+        }
+        if (updatedApplication.getAmountPaid() != existing.getAmountPaid()) {
+            existing.setAmountPaid(updatedApplication.getAmountPaid());
+        }
+        if (updatedApplication.getPaymentStatus() != null) {
+            existing.setPaymentStatus(updatedApplication.getPaymentStatus());
+        }
+        if (updatedApplication.getTestDate() != null) {
+            existing.setTestDate(updatedApplication.getTestDate());
+        }
+        if (updatedApplication.getTestResult() != null) {
+            existing.setTestResult(updatedApplication.getTestResult());
+        }
+
+        if (updatedApplication.getApplicant() != null) {
+            Applicant applicant = existing.getApplicant();
+            if (applicant == null) {
+                applicant = new Applicant();
+                existing.setApplicant(applicant);
+            }
+            Applicant updates = updatedApplication.getApplicant();
+            if (updates.getFullName() != null) applicant.setFullName(updates.getFullName());
+            if (updates.getEmail() != null) applicant.setEmail(updates.getEmail());
+            if (updates.getPhone() != null) applicant.setPhone(updates.getPhone());
+            if (updates.getAddress() != null) applicant.setAddress(updates.getAddress());
+            if (updates.getAadhaarNumber() != null) applicant.setAadhaarNumber(updates.getAadhaarNumber());
+            if (updates.getDateOfBirth() != null) applicant.setDateOfBirth(updates.getDateOfBirth());
+        }
+
+        rtoOfficerDao.updateApplicationById(applicationNumber, existing);
+        return "Application updated successfully";
     }
 
     @Override

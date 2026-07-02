@@ -10,6 +10,7 @@ const applicantNav = [
   { to: '/app/apply-dl',      icon: '🚗', label: 'Apply for DL' },
   { to: '/app/schedule-test', icon: '📅', label: 'Schedule Test' },
   { to: '/app/dl-status',     icon: '🔎', label: 'Check DL Status' },
+  { to: '/app/license-details', icon: '🪪', label: 'View License Details' },
 ];
 
 const rtoNav = [
@@ -22,6 +23,9 @@ const rtoNav = [
   { section: 'All Applications' },
   { to: '/app/rto/applications',           icon: '📂', label: 'All Applications' },
   { to: '/app/rto/search',                 icon: '🔎', label: 'Search' },
+  { to: '/app/rto/applicants',             icon: 'A', label: 'Applicants' },
+  { to: '/app/rto/generate-license',       icon: '#', label: 'Generate License' },
+  { to: '/app/rto/reports',                icon: '%', label: 'Reports' },
 ];
 
 export default function AppLayout({ children, title, subtitle }) {

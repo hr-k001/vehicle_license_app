@@ -35,3 +35,16 @@ application-local.properties
 # ── Logs ──────────────────────────────────────────────────
 *.log
 logs/
+
+# ── Node / NPM ───────────────────────────────────────────
+npm-debug.log*
+package-lock.json
+
+# ── Java / IDE extras
+.classpath
+.project
+.settings/
+
+# ── Build tools
+.mvn/
+

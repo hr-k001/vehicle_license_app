@@ -71,6 +71,16 @@ public class RTOOfficerController {
         return ResponseEntity.ok(rtoOfficerService.searchApplications(q));
     }
 
+    @PutMapping("/applications/{applicationNumber}")
+    public ResponseEntity<Map<String, String>> updateApplicationDetails(@PathVariable String applicationNumber,
+                                                                       @RequestBody Application updatedApplication) {
+        String message = rtoOfficerService.updateApplicationDetails(applicationNumber, updatedApplication);
+        if ("Application not found".equals(message)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(Map.of("message", message));
+    }
+
     @PutMapping("/test/pass/{applicationNumber}")
     public ResponseEntity<Map<String, String>> passTest(@PathVariable String applicationNumber) {
         String message = rtoOfficerService.passTest(applicationNumber);

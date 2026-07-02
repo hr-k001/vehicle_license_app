@@ -5,8 +5,8 @@ import com.online.model.Application;
 import com.online.model.ApplicationStatus;
 import com.online.model.DrivingLicense;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,7 +20,6 @@ public class RTOOfficerDaoImpl implements RTOOfficerDao {
         this.applicationStore = applicationStore;
     }
 
-    // US-005 (Mansidak)
     @Override
     public Application getApplicationById(String applicationNumber) {
         return applicationStore.get(applicationNumber);
@@ -28,9 +27,7 @@ public class RTOOfficerDaoImpl implements RTOOfficerDao {
 
     @Override
     public String updateApplicationById(String applicationNumber, Application application) {
-        if (!applicationStore.containsKey(applicationNumber)) {
-            return "Application not found";
-        }
+        if (!applicationStore.containsKey(applicationNumber)) return "Application not found";
         applicationStore.put(applicationNumber, application);
         return "Status updated to " + application.getStatus();
     }
@@ -38,16 +35,15 @@ public class RTOOfficerDaoImpl implements RTOOfficerDao {
     @Override
     public DrivingLicense createLearnerLicense(String applicationNumber) {
         Application application = applicationStore.get(applicationNumber);
-        if (application == null || application.getStatus() != ApplicationStatus.APPROVED) {
-            return null;
-        }
+        if (application == null || application.getStatus() != ApplicationStatus.APPROVED) return null;
         String licenseNumber = "LL-LIC-" + licenseSequence.incrementAndGet();
-        Date issueDate = new Date();
-        Date validTill = new Date(issueDate.getTime() + (180L * 24 * 60 * 60 * 1000));
-        return new DrivingLicense(licenseNumber, issueDate, validTill);
+        return DrivingLicense.builder()
+                .drivingLicenseNumber(licenseNumber)
+                .dateOfIssue(LocalDate.now())
+                .validTill(LocalDate.now().plusMonths(6))
+                .build();
     }
 
-    // US-012 (Himanshu)
     @Override
     public List<Application> getAllApplications() {
         return new ArrayList<>(applicationStore.values());
@@ -62,24 +58,21 @@ public class RTOOfficerDaoImpl implements RTOOfficerDao {
         return "Test result updated to " + result;
     }
 
-    // US-013 (Himanshu) — searches by application number, applicant email, or applicant name
+    // US-013: search by application number, email, or name
     @Override
     public List<Application> searchApplications(String query) {
-        if (query == null || query.trim().isEmpty()) {
-            return getAllApplications();
-        }
+        if (query == null || query.trim().isEmpty()) return getAllApplications();
         String lower = query.trim().toLowerCase();
         List<Application> results = new ArrayList<>();
         for (Application app : applicationStore.values()) {
             if (app.getApplicationNumber().toLowerCase().contains(lower)) {
-                results.add(app);
-                continue;
+                results.add(app); continue;
             }
             if (app.getApplicant() != null) {
                 String email = app.getApplicant().getEmail();
-                String name = app.getApplicant().getFirstName() + " " + app.getApplicant().getLastName();
+                String name  = app.getApplicant().getFullName();
                 if ((email != null && email.toLowerCase().contains(lower))
-                        || name.toLowerCase().contains(lower)) {
+                        || (name != null && name.toLowerCase().contains(lower))) {
                     results.add(app);
                 }
             }

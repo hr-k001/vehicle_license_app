@@ -22,14 +22,27 @@ export const applyDL = (data) => api.post('/license/dl/apply', data);
 export const scheduleTest = (appNo, data) => api.put(`/license/dl/${appNo}/schedule-test`, data);
 // US-009
 export const getDLStatus = (appNo) => api.get(`/license/dl/status/${appNo}`);
+// US-016
+export const getLicenseDetails = (licenseNumber) => api.get(`/license/${encodeURIComponent(licenseNumber)}`);
 // US-010
 export const approveDL = (appNo) => api.put(`/rto/dl/approve/${appNo}`);
 // US-011
 export const rejectDL = (appNo) => api.put(`/rto/dl/reject/${appNo}`);
 // US-012
 export const getAllApplications = () => api.get('/rto/applications');
+export const updateApplicationDetails = (appNo, data) => api.put(`/rto/applications/${encodeURIComponent(appNo)}`, data);
 // US-013
 export const searchApplications = (query) => api.get(`/rto/applications/search?q=${query}`);
+// US-014
+export const getApplicants = () => api.get('/applicants');
+export const createApplicant = (data) => api.post('/applicants', data);
+export const updateApplicant = (id, data) => api.put(`/applicants/${id}`, data);
+export const deleteApplicant = (id) => api.delete(`/applicants/${id}`);
+// US-015
+export const generateLicenseNumber = (appNo) => api.post(`/license/generate/${appNo}`);
+// US-018
+export const getReportCounts = () => api.get('/reports/counts');
+export const getReportApplications = (status = 'all') => api.get(`/reports/${status}`);
 
 // Check if applicant has approved LL (before DL application)
 export const checkLLByEmail = (email) => api.get(`/license/ll/check-by-email?email=${encodeURIComponent(email)}`);

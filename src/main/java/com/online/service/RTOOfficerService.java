@@ -24,6 +24,8 @@ public interface RTOOfficerService {
     // Himanshu — US-013
     List<Application> searchApplications(String query);
 
+    String updateApplicationDetails(String applicationNumber, Application updatedApplication);
+
     // RTO marks driving test as passed or failed
     String passTest(String applicationNumber);
     String failTest(String applicationNumber);

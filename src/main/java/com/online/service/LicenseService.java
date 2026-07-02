@@ -1,5 +1,6 @@
 package com.online.service;
 
+import com.online.dto.LicenseDetailDTO;
 import com.online.model.Application;
 import com.online.model.ApplicationStatus;
 
@@ -7,21 +8,27 @@ import java.util.Date;
 
 public interface LicenseService {
 
-    // Mansidak — US-003
+    // US-003
     String applyForLL(Application application);
 
-    // Mansidak — US-004
+    // US-004
     ApplicationStatus viewLLStatus(String applicationNumber);
 
-    // Himanshu — US-007
+    // US-007
     String applyForDL(Application application);
 
-    // Himanshu — US-008
+    // US-008
     String scheduleDrivingTest(String applicationNumber, Date testDate);
 
-    // Himanshu — US-009
+    // US-009
     ApplicationStatus viewDLStatus(String applicationNumber);
 
-    // Returns the LL application for the given email (to gate DL submission)
+    // Gate check before DL submission
     Application getLLApplicationByEmail(String email);
+
+    // US-015
+    String generateLicenseNumber(String applicationId);
+
+    // US-016
+    LicenseDetailDTO viewLicenseDetails(String licenseNumber);
 }

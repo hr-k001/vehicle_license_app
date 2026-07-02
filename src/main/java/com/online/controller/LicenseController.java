@@ -1,8 +1,10 @@
 package com.online.controller;
 
+import com.online.dto.LicenseDetailDTO;
 import com.online.model.Application;
 import com.online.model.ApplicationStatus;
 import com.online.service.LicenseService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +24,7 @@ public class LicenseController {
 
     // US-003
     @PostMapping("/ll/apply")
-    public ResponseEntity<Map<String, String>> applyForLL(@RequestBody Application application) {
+    public ResponseEntity<Map<String, String>> applyForLL(@Valid @RequestBody Application application) {
         String message = licenseService.applyForLL(application);
         if ("Invalid application details".equals(message)) {
             return ResponseEntity.badRequest().body(Map.of("message", message));
@@ -42,7 +44,7 @@ public class LicenseController {
 
     // US-007
     @PostMapping("/dl/apply")
-    public ResponseEntity<Map<String, String>> applyForDL(@RequestBody Application application) {
+    public ResponseEntity<Map<String, String>> applyForDL(@Valid @RequestBody Application application) {
         String message = licenseService.applyForDL(application);
         if ("Invalid application details".equals(message)) {
             return ResponseEntity.badRequest().body(Map.of("message", message));
@@ -83,5 +85,31 @@ public class LicenseController {
             "status", app.getStatus().name(),
             "applicationNumber", app.getApplicationNumber()
         ));
+    }
+
+    // US-015: Generate Unique License Number
+    @PostMapping("/generate/{applicationId}")
+    public ResponseEntity<Map<String, String>> generateLicenseNumber(@PathVariable String applicationId) {
+        String result = licenseService.generateLicenseNumber(applicationId);
+        if (result.startsWith("License generated successfully:")) {
+            String licenseNumber = result.replace("License generated successfully: ", "");
+            return ResponseEntity.ok(Map.of("message", "License generated successfully", "licenseNumber", licenseNumber));
+        }
+        return ResponseEntity.badRequest().body(Map.of("message", result));
+    }
+
+    // US-016: View License Details
+    @GetMapping("/{licenseNumber}")
+    public ResponseEntity<LicenseDetailDTO> viewLicenseDetails(@PathVariable String licenseNumber) {
+        LicenseDetailDTO details = licenseService.viewLicenseDetails(licenseNumber);
+        if (details == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(details);
+    }
+
+    @GetMapping("/details/{applicationNumber}")
+    public ResponseEntity<LicenseDetailDTO> viewLicenseDetailsByApplication(@PathVariable String applicationNumber) {
+        var details = licenseService.viewLicenseDetails(applicationNumber);
+        if (details == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(details);
     }
 }

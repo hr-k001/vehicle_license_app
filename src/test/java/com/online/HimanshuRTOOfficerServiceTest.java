@@ -13,6 +13,7 @@ import com.online.service.impl.RTOOfficerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
@@ -33,9 +34,9 @@ class HimanshuRTOOfficerServiceTest {
         rtoOfficerService = new RTOOfficerServiceImpl(rtoOfficerDao);
 
         Applicant applicant = new Applicant(
-                "Himanshu", null, "Kumar", new Date(),
-                "Delhi", "Graduate", "9123456780",
-                "himanshu@example.com", "Indian", "Two Wheeler", null);
+                null, "Himanshu Kumar", "himanshu@example.com",
+                "9123456780", "Delhi", "123456789012",
+                LocalDate.of(1998, 3, 10), null, null);
 
         llApplication = new Application(null, new Date(), "Online", 200.0,
                 "PAID", null, null, null, applicant);

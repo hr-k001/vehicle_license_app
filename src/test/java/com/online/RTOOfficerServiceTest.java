@@ -14,6 +14,7 @@ import com.online.service.impl.RTOOfficerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,22 +23,21 @@ class RTOOfficerServiceTest {
 
     private LicenseService licenseService;
     private RTOOfficerService rtoOfficerService;
+    private RTOOfficerDao rtoOfficerDao;
     private Application application;
 
     @BeforeEach
     void setUp() {
-        // LicenseDaoImpl and RTOOfficerDaoImpl share the same in-memory
-        // application store so an officer can act on applicant-submitted applications
         LicenseDaoImpl licenseDao = new LicenseDaoImpl();
-        RTOOfficerDao rtoOfficerDao = new RTOOfficerDaoImpl(licenseDao.getApplicationStore());
+        rtoOfficerDao = new RTOOfficerDaoImpl(licenseDao.getApplicationStore());
 
         licenseService = new LicenseServiceImpl(licenseDao);
         rtoOfficerService = new RTOOfficerServiceImpl(rtoOfficerDao);
 
         Applicant applicant = new Applicant(
-                "Himanshu", null, "Kumar", new Date(),
-                "Ludhiana", "Graduate", "9123456780",
-                "himanshu@example.com", "Indian", "Two Wheeler", null);
+                null, "Himanshu Kumar", "himanshu@example.com",
+                "9123456780", "Ludhiana", "123456789012",
+                LocalDate.of(1998, 3, 10), null, null);
 
         application = new Application(null, new Date(), "Online", 200.0,
                 "PAID", null, null, null, applicant);
@@ -60,5 +60,35 @@ class RTOOfficerServiceTest {
     void testApproveLearnerLicense_ApplicationNotFound() {
         String result = rtoOfficerService.approveLearnerLicense("LL-UNKNOWN");
         assertEquals("Application not found", result);
+    }
+
+    @Test
+    void testUpdateApplicationDetails_UpdatesEditableFields() {
+        Application updated = new Application();
+        updated.setStatus(ApplicationStatus.REJECTED);
+        updated.setRemarks("Officer corrected the application details.");
+        updated.setAmountPaid(350.0);
+        updated.setPaymentStatus("PAID");
+        updated.setTestResult("PASS");
+
+        Applicant applicant = new Applicant();
+        applicant.setFullName("Updated Name");
+        applicant.setEmail("updated@example.com");
+        applicant.setPhone("9988776655");
+        updated.setApplicant(applicant);
+
+        String result = rtoOfficerService.updateApplicationDetails(application.getApplicationNumber(), updated);
+
+        assertEquals("Application updated successfully", result);
+
+        Application stored = rtoOfficerDao.getApplicationById(application.getApplicationNumber());
+        assertEquals(ApplicationStatus.REJECTED, stored.getStatus());
+        assertEquals("Officer corrected the application details.", stored.getRemarks());
+        assertEquals(350.0, stored.getAmountPaid());
+        assertEquals("PAID", stored.getPaymentStatus());
+        assertEquals("PASS", stored.getTestResult());
+        assertEquals("Updated Name", stored.getApplicant().getFullName());
+        assertEquals("updated@example.com", stored.getApplicant().getEmail());
+        assertEquals("9988776655", stored.getApplicant().getPhone());
     }
 }

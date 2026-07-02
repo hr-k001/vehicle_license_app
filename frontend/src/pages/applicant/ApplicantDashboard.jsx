@@ -38,6 +38,13 @@ const actions = [
     label: 'Track DL Status',
     desc: 'Check your DL application status',
   },
+  {
+    to: '/app/license-details',
+    icon: '🪪',
+    bg: '#eef2ff',
+    label: 'View License Details',
+    desc: 'View issued license information',
+  },
 ];
 
 const journeySteps = ['Register', 'Apply LL', 'LL Approval', 'Apply DL', 'Book Test', 'DL Issued'];

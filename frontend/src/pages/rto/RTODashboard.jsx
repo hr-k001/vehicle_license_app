@@ -27,12 +27,14 @@ export default function RTODashboard() {
   ];
 
   const quickActions = [
-    { to: '/app/rto/approve-ll',  icon: '✅', bg: '#ecfdf5', label: 'Approve LL',          desc: 'Approve learner license applications' },
-    { to: '/app/rto/reject-ll',   icon: '❌', bg: '#fef2f2', label: 'Reject LL',           desc: 'Reject learner license applications' },
-    { to: '/app/rto/approve-dl',  icon: '🟢', bg: '#eff6ff', label: 'Approve DL',          desc: 'Approve driving license applications' },
-    { to: '/app/rto/reject-dl',   icon: '🔴', bg: '#fff7ed', label: 'Reject DL',           desc: 'Reject driving license applications' },
-    { to: '/app/rto/applications', icon: '📂', bg: '#fdf4ff', label: 'All Applications',    desc: 'View and manage all applications' },
-    { to: '/app/rto/search',       icon: '🔍', bg: '#fefce8', label: 'Search Applications', desc: 'Search by applicant name or number' },
+    { to: '/app/rto/ll-applications',  icon: '✅', bg: '#ecfdf5', label: 'LL Applications',     desc: 'Approve or reject learner license applications' },
+    { to: '/app/rto/dl-applications',  icon: '🚗', bg: '#eff6ff', label: 'DL Applications',     desc: 'Approve or reject driving license applications' },
+    { to: '/app/rto/scheduled-tests',  icon: '📅', bg: '#fff7ed', label: 'Scheduled Tests',     desc: 'Mark pass or fail for driving tests' },
+    { to: '/app/rto/applications',     icon: '📂', bg: '#fdf4ff', label: 'All Applications',    desc: 'View and manage all applications' },
+    { to: '/app/rto/search',           icon: '🔍', bg: '#fefce8', label: 'Search Applications', desc: 'Search by applicant name or number' },
+    { to: '/app/rto/applicants',        icon: 'A', bg: '#ecfeff', label: 'Applicants',           desc: 'Manage applicant records and information' },
+    { to: '/app/rto/generate-license',  icon: '#', bg: '#eef2ff', label: 'Generate License',     desc: 'Assign a unique license number' },
+    { to: '/app/rto/reports',           icon: '%', bg: '#f0fdf4', label: 'Reports',              desc: 'View application reports and counts' },
   ];
 
   return (

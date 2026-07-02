@@ -20,4 +20,7 @@ public interface LicenseDao {
 
     // Check if an applicant has an approved LL (needed before DL application)
     Application getLLApplicationByEmail(String email);
+
+    // Expose the in-memory store for reporting (US-018)
+    java.util.Map<String, Application> getApplicationStore();
 }
