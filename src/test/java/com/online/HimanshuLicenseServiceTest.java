@@ -91,14 +91,15 @@ class HimanshuLicenseServiceTest {
         assertNull(status);
     }
 
-    // US-010: RTO officer approves driving license -> License approved successfully
+    // US-010: RTO officer approves driving license -> Application approved, license generation pending
     @Test
     void testApproveDrivingLicense_LicenseApprovedSuccessfully() {
         // Must pass the driving test before DL can be approved
         rtoOfficerService.passTest(dlApplication.getApplicationNumber());
 
         String result = rtoOfficerService.approveDrivingLicense(dlApplication.getApplicationNumber());
-        assertEquals("License approved successfully", result);
+        assertEquals("DL application approved. License number generation is pending", result);
+        assertNull(dlApplication.getApplicant().getDrivingLicenseNumber());
 
         ApplicationStatus status = licenseService.viewDLStatus(dlApplication.getApplicationNumber());
         assertEquals(ApplicationStatus.APPROVED, status);

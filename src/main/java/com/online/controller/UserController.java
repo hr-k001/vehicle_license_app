@@ -21,8 +21,11 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@RequestBody User user) {
+        if ("rto".equalsIgnoreCase(user.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "RTO registration is not allowed"));
+        }
         String message = userService.userRegistration(user);
-        return ResponseEntity.ok(Map.of("message", message));
+        return ResponseEntity.ok(Map.of("message", message, "role", normalizeRole(user.getRole())));
     }
 
     @PostMapping("/login")
@@ -31,6 +34,11 @@ public class UserController {
         if ("Invalid credentials".equals(message)) {
             return ResponseEntity.status(401).body(Map.of("message", message));
         }
-        return ResponseEntity.ok(Map.of("message", message));
+        return ResponseEntity.ok(Map.of("message", message, "role", normalizeRole(user.getRole())));
+    }
+
+    private String normalizeRole(String role) {
+        if ("rto".equalsIgnoreCase(role)) return "rto";
+        return "applicant";
     }
 }

@@ -24,6 +24,7 @@ export const scheduleTest = (appNo, data) => api.put(`/license/dl/${appNo}/sched
 export const getDLStatus = (appNo) => api.get(`/license/dl/status/${appNo}`);
 // US-016
 export const getLicenseDetails = (licenseNumber) => api.get(`/license/${encodeURIComponent(licenseNumber)}`);
+export const getApplicantProgress = (email) => api.get(`/license/progress?email=${encodeURIComponent(email)}`);
 // US-010
 export const approveDL = (appNo) => api.put(`/rto/dl/approve/${appNo}`);
 // US-011

@@ -4,7 +4,6 @@ import com.online.dao.RTOOfficerDao;
 import com.online.model.Applicant;
 import com.online.model.Application;
 import com.online.model.ApplicationStatus;
-import com.online.model.ApplicationType;
 import com.online.service.LicenseService;
 import com.online.service.RTOOfficerService;
 
@@ -13,7 +12,6 @@ import java.util.List;
 public class RTOOfficerServiceImpl implements RTOOfficerService {
 
     private final RTOOfficerDao rtoOfficerDao;
-    private final LicenseService licenseService;
 
     public RTOOfficerServiceImpl(RTOOfficerDao rtoOfficerDao) {
         this(rtoOfficerDao, null);
@@ -21,7 +19,6 @@ public class RTOOfficerServiceImpl implements RTOOfficerService {
 
     public RTOOfficerServiceImpl(RTOOfficerDao rtoOfficerDao, LicenseService licenseService) {
         this.rtoOfficerDao = rtoOfficerDao;
-        this.licenseService = licenseService;
     }
 
     // US-005 (Mansidak)
@@ -57,10 +54,7 @@ public class RTOOfficerServiceImpl implements RTOOfficerService {
         }
         application.setStatus(ApplicationStatus.APPROVED);
         rtoOfficerDao.updateApplicationById(applicationNumber, application);
-        if (application.getType() == ApplicationType.DL && licenseService != null) {
-            licenseService.generateLicenseNumber(applicationNumber);
-        }
-        return "License approved successfully";
+        return "DL application approved. License number generation is pending";
     }
 
     // US-011 (Himanshu)

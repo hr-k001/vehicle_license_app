@@ -9,6 +9,15 @@ function statusBadge(status) {
   return <span className={`badge ${map[status] || 'badge-gray'}`}>{status}</span>;
 }
 
+function applicantName(applicant) {
+  return applicant?.fullName || '—';
+}
+
+function formatDate(value) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('en-IN');
+}
+
 export default function LLApplications() {
   const [apps, setApps]       = useState([]);
   const [tab, setTab]         = useState('PENDING');
@@ -41,7 +50,7 @@ export default function LLApplications() {
     if (!matchTab) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
-    const name = `${a.applicant?.firstName || ''} ${a.applicant?.lastName || ''}`.toLowerCase();
+    const name = applicantName(a.applicant).toLowerCase();
     return (
       a.applicationNumber?.toLowerCase().includes(q) ||
       a.applicant?.email?.toLowerCase().includes(q) ||
@@ -110,7 +119,7 @@ export default function LLApplications() {
                       onClick={() => { setSelected(a); setActionMsg(''); setActionErr(''); }}
                     >
                       <td><code>{a.applicationNumber}</code></td>
-                      <td>{a.applicant?.firstName} {a.applicant?.lastName}</td>
+                      <td>{applicantName(a.applicant)}</td>
                       <td>{a.applicant?.email}</td>
                       <td>{statusBadge(a.status)}</td>
                     </tr>
@@ -126,7 +135,7 @@ export default function LLApplications() {
           <div className="app-detail-panel">
             <div className="detail-panel-header">
               <div>
-                <div className="detail-panel-title">{selected.applicant?.firstName} {selected.applicant?.lastName}</div>
+                <div className="detail-panel-title">{applicantName(selected.applicant)}</div>
                 <div className="detail-panel-sub">{selected.applicationNumber}</div>
               </div>
               <button className="btn-close-panel" onClick={() => { setSelected(null); setActionMsg(''); setActionErr(''); }}>✕</button>
@@ -135,12 +144,13 @@ export default function LLApplications() {
             <div className="detail-body">
               <div className="detail-section-title">Applicant Information</div>
               <div className="detail-grid">
-                <div className="detail-row"><span>Full Name</span><strong>{selected.applicant?.firstName} {selected.applicant?.middleName || ''} {selected.applicant?.lastName}</strong></div>
-                <div className="detail-row"><span>Email</span><strong>{selected.applicant?.email}</strong></div>
-                <div className="detail-row"><span>Mobile</span><strong>{selected.applicant?.mobile}</strong></div>
-                <div className="detail-row"><span>Nationality</span><strong>{selected.applicant?.nationality}</strong></div>
-                <div className="detail-row"><span>Place of Birth</span><strong>{selected.applicant?.placeOfBirth || '—'}</strong></div>
-                <div className="detail-row"><span>Qualification</span><strong>{selected.applicant?.qualification || '—'}</strong></div>
+                <div className="detail-row"><span>Full Name</span><strong>{applicantName(selected.applicant)}</strong></div>
+                <div className="detail-row"><span>Email</span><strong>{selected.applicant?.email || '—'}</strong></div>
+                <div className="detail-row"><span>Phone</span><strong>{selected.applicant?.phone || '—'}</strong></div>
+                <div className="detail-row"><span>Address</span><strong>{selected.applicant?.address || '—'}</strong></div>
+                <div className="detail-row"><span>Aadhaar Number</span><strong>{selected.applicant?.aadhaarNumber || '—'}</strong></div>
+                <div className="detail-row"><span>Date of Birth</span><strong>{formatDate(selected.applicant?.dateOfBirth)}</strong></div>
+                <div className="detail-row"><span>Vehicle Type</span><strong>{selected.applicant?.vehicleType || '—'}</strong></div>
               </div>
 
               <div className="detail-section-title" style={{ marginTop: 20 }}>Application Details</div>

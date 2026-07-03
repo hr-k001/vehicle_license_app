@@ -39,18 +39,24 @@ export default function Auth() {
     setLoading(true); setError('');
     try {
       if (tab === 'register') {
-        const res = await registerUser(form);
+        const res = await registerUser({ ...form, role });
         if (res.data.message === 'User already exists') {
           setError('This email is already registered. Please sign in.');
           return;
         }
-        login(form.email, role);
-        navigate(dashPath);
+        if (res.data.message === 'RTO registration is not allowed') {
+          setError('RTO officer accounts are managed by the system administrator.');
+          return;
+        }
+        const authenticatedRole = res.data.role || role;
+        login(form.email, authenticatedRole);
+        navigate(authenticatedRole === 'rto' ? '/app/rto-dashboard' : '/app/dashboard');
       } else {
-        const res = await loginUser(form);
+        const res = await loginUser({ ...form, role });
         if (res.data.message === 'Login successful') {
-          login(form.email, role);
-          navigate(dashPath);
+          const authenticatedRole = res.data.role || role;
+          login(form.email, authenticatedRole);
+          navigate(authenticatedRole === 'rto' ? '/app/rto-dashboard' : '/app/dashboard');
         } else {
           setError('Invalid email or password.');
         }
@@ -109,12 +115,14 @@ export default function Auth() {
           >
             Sign In
           </div>
-          <div
-            className={`auth-tab ${tab === 'register' ? 'active' : ''}`}
-            onClick={() => { setTab('register'); setError(''); }}
-          >
-            Register
-          </div>
+          {!isRTO && (
+            <div
+              className={`auth-tab ${tab === 'register' ? 'active' : ''}`}
+              onClick={() => { setTab('register'); setError(''); }}
+            >
+              Register
+            </div>
+          )}
         </div>
 
         {error && <div className="alert alert-danger">⚠ {error}</div>}
@@ -147,13 +155,17 @@ export default function Auth() {
         </form>
 
         <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.82rem', color: 'var(--text-400)' }}>
-          {tab === 'login' ? "Don't have an account? " : 'Already have an account? '}
-          <span
-            style={{ color: 'var(--secondary)', cursor: 'pointer', fontWeight: 600 }}
-            onClick={() => { setTab(tab === 'login' ? 'register' : 'login'); setError(''); }}
-          >
-            {tab === 'login' ? 'Register' : 'Sign In'}
-          </span>
+          {!isRTO && (
+            <>
+              {tab === 'login' ? "Don't have an account? " : 'Already have an account? '}
+              <span
+                style={{ color: 'var(--secondary)', cursor: 'pointer', fontWeight: 600 }}
+                onClick={() => { setTab(tab === 'login' ? 'register' : 'login'); setError(''); }}
+              >
+                {tab === 'login' ? 'Register' : 'Sign In'}
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>

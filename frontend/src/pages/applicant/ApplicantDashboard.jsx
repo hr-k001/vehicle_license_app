@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import { useAuth } from '../../context/AuthContext';
+import { getApplicantProgress } from '../../api/api';
 
 const actions = [
   {
@@ -47,12 +49,27 @@ const actions = [
   },
 ];
 
-const journeySteps = ['Register', 'Apply LL', 'LL Approval', 'Apply DL', 'Book Test', 'DL Issued'];
+const journeySteps = [
+  { key: 'registered', label: 'Register' },
+  { key: 'llApplied', label: 'Apply LL' },
+  { key: 'llApproved', label: 'LL Approval' },
+  { key: 'dlApplied', label: 'Apply DL' },
+  { key: 'testBooked', label: 'Book Test' },
+  { key: 'dlIssued', label: 'DL Issued' },
+];
 
 export default function ApplicantDashboard() {
   const { user } = useAuth();
+  const [progress, setProgress] = useState({ registered: true });
   const name = user?.email?.split('@')[0] || 'Applicant';
   const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    getApplicantProgress(user.email)
+      .then(res => setProgress(res.data || { registered: true }))
+      .catch(() => setProgress({ registered: true }));
+  }, [user?.email]);
 
   return (
     <AppLayout title="Dashboard" subtitle="Your license application overview">
@@ -95,12 +112,12 @@ export default function ApplicantDashboard() {
         <div className="journey-sub">Typical steps to obtain your Driving License</div>
         <div className="journey-steps">
           {journeySteps.map((step, i) => (
-            <div className="journey-step" key={step}>
+            <div className={`journey-step${progress[step.key] ? ' completed' : ''}`} key={step.key}>
               <div className="journey-step-inner">
                 <div className="journey-step-circle">{i + 1}</div>
-                <div className="journey-step-label">{step}</div>
+                <div className="journey-step-label">{step.label}</div>
               </div>
-              {i < journeySteps.length - 1 && <div className="journey-connector" />}
+              {i < journeySteps.length - 1 && <div className={`journey-connector${progress[step.key] && progress[journeySteps[i + 1].key] ? ' completed' : ''}`} />}
             </div>
           ))}
         </div>

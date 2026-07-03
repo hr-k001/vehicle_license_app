@@ -23,6 +23,8 @@ public interface LicenseService {
     // US-009
     ApplicationStatus viewDLStatus(String applicationNumber);
 
+    Application getApplicationById(String applicationNumber);
+
     // Gate check before DL submission
     Application getLLApplicationByEmail(String email);
 
@@ -31,4 +33,6 @@ public interface LicenseService {
 
     // US-016
     LicenseDetailDTO viewLicenseDetails(String licenseNumber);
+
+    java.util.Map<String, Boolean> getApplicantProgress(String email);
 }

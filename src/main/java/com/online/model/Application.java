@@ -1,11 +1,21 @@
 package com.online.model;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import jakarta.validation.Valid;
 
 import java.util.Date;
 
+@Entity
+@Table(name = "applications")
 public class Application {
 
+    @Id
     private String applicationNumber;
     private Date applicationDate;
     private String modeOfPayment;
@@ -13,9 +23,12 @@ public class Application {
     private String paymentStatus;
     private String remarks;
 
+    @Enumerated(EnumType.STRING)
     private ApplicationType type;
+    @Enumerated(EnumType.STRING)
     private ApplicationStatus status;
     @Valid
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private Applicant applicant;
     private Date testDate;
     private String testResult; // "PASS" or "FAIL" after driving test

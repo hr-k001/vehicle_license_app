@@ -7,7 +7,7 @@ const statusIcon = { PENDING: '⏳', APPROVED: '✅', REJECTED: '❌', SCHEDULED
 const statusMsg  = {
   PENDING:   'Your DL application is pending RTO officer review.',
   SCHEDULED: 'Your driving test is scheduled. Please attend on the confirmed date.',
-  APPROVED:  'Congratulations! Your Driving License has been approved.',
+  APPROVED:  'Your DL application has been approved.',
   REJECTED:  'Your DL application was rejected. Contact the RTO office for assistance.',
 };
 
@@ -63,6 +63,16 @@ export default function ViewDLStatus() {
               {result.testDate && (
                 <div style={{ marginTop: 8, padding: '8px 12px', background: '#eff6ff', borderRadius: 6, fontSize: '0.83rem' }}>
                   Test Date: <strong>{new Date(result.testDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong>
+                </div>
+              )}
+              {result.licenseNumber && (
+                <div style={{ marginTop: 8, padding: '10px 12px', background: '#ecfdf5', borderRadius: 6, fontSize: '0.9rem' }}>
+                  Driving License Number: <strong>{result.licenseNumber}</strong>
+                </div>
+              )}
+              {result.status === 'APPROVED' && !result.licenseNumber && (
+                <div style={{ marginTop: 8, padding: '10px 12px', background: '#fff7ed', borderRadius: 6, fontSize: '0.9rem' }}>
+                  DL creation is in progress. Your license number will appear here after the RTO officer generates it.
                 </div>
               )}
               <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: 8 }}>

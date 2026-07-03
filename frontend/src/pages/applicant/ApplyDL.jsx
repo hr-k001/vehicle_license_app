@@ -8,6 +8,20 @@ const empty = {
   fullName: '', phone: '', email: '', address: '', aadhaarNumber: '', dateOfBirth: '', vehicleType: ''
 };
 
+const maxDateOfBirth = () => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 18);
+  return date.toISOString().slice(0, 10);
+};
+
+const getErrorMessage = (err) => {
+  const data = err.response?.data;
+  if (data?.validationErrors) {
+    return Object.values(data.validationErrors).join(' ');
+  }
+  return data?.message || 'Submission failed. Please check your details.';
+};
+
 export default function ApplyDL() {
   const { user } = useAuth();
   const [llStatus, setLlStatus]       = useState(null); // null=checking
@@ -64,12 +78,24 @@ export default function ApplyDL() {
     e.preventDefault();
     setLoading(true); setError(''); setResult(null);
     try {
-      const payload = { applicant: { ...form }, modeOfPayment: 'Online', amountPaid: 500, paymentStatus: 'PAID' };
+      const payload = {
+        applicant: {
+          ...form,
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          address: form.address.trim(),
+          aadhaarNumber: form.aadhaarNumber.trim()
+        },
+        modeOfPayment: 'Online',
+        amountPaid: 500,
+        paymentStatus: 'PAID'
+      };
       const res = await applyDL(payload);
       setResult(res.data);
       setForm({ ...empty, email: user?.email || '' });
     } catch (err) {
-      setError(err.response?.data?.message || 'Submission failed.');
+      setError(getErrorMessage(err));
     } finally { setLoading(false); }
   };
 
@@ -197,19 +223,37 @@ export default function ApplyDL() {
               </div>
               <div className="form-group">
                 <label>Phone Number *</label>
-                <input placeholder="e.g. 9876543210" value={form.phone} onChange={e => set('phone', e.target.value)} required />
+                <input
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
+                  maxLength="10"
+                  title="Phone number must be exactly 10 digits"
+                  placeholder="e.g. 9876543210"
+                  value={form.phone}
+                  onChange={e => set('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  required
+                />
               </div>
               <div className="form-group">
                 <label>Address *</label>
-                <input placeholder="e.g. 123 Main Street, Delhi" value={form.address} onChange={e => set('address', e.target.value)} required />
+                <input minLength="5" maxLength="255" placeholder="e.g. 123 Main Street, Delhi" value={form.address} onChange={e => set('address', e.target.value)} required />
               </div>
               <div className="form-group">
                 <label>Aadhaar Number *</label>
-                <input placeholder="e.g. 123456789012" value={form.aadhaarNumber} onChange={e => set('aadhaarNumber', e.target.value)} required />
+                <input
+                  inputMode="numeric"
+                  pattern="[0-9]{12}"
+                  maxLength="12"
+                  title="Aadhaar number must be exactly 12 digits"
+                  placeholder="e.g. 123456789012"
+                  value={form.aadhaarNumber}
+                  onChange={e => set('aadhaarNumber', e.target.value.replace(/\D/g, '').slice(0, 12))}
+                  required
+                />
               </div>
               <div className="form-group">
                 <label>Date of Birth *</label>
-                <input type="date" value={form.dateOfBirth} onChange={e => set('dateOfBirth', e.target.value)} required />
+                <input type="date" max={maxDateOfBirth()} value={form.dateOfBirth} onChange={e => set('dateOfBirth', e.target.value)} required />
               </div>
               <div className="form-group">
                 <label>Vehicle Type *</label>

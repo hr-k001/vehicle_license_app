@@ -1,318 +1,214 @@
-![alt text](image.png)# Vehicle License Portal — Project Workflow
+# Vehicle License Portal - Project Workflow
 
-## Tech Stack at a Glance
+## Tech Stack
 
-| Layer      | Technology                         | Port  |
-|------------|------------------------------------|-------|
-| Frontend   | React 18 + Vite + React Router v6  | 5173  |
-| Backend    | Java 21, Spring Boot 3.2.5, Maven  | 8080  |
-| Storage    | In-memory (`HashMap`) — no database|  —    |
+| Layer | Technology | Main files |
+| --- | --- | --- |
+| Frontend | React + Vite + React Router | `frontend/src` |
+| Backend | Spring Boot 3.2.5, Java 21 | `src/main/java/com/online` |
+| API client | Axios | `frontend/src/api/api.js` |
+| Database | MySQL, JPA/Hibernate | `src/main/resources/application.properties`, `repository/*` |
+| Test database | H2 | `src/test/resources/application.properties` |
 
----
+The running app uses MySQL database `vehicle_license_db`. Tests still use H2 so they do not depend on your local MySQL data.
 
-## System Architecture
+## Main Folders and Files
 
-```
-Browser (React)
-     │
-     │  HTTP REST  (axios, base: http://localhost:8080/api)
-     ▼
-Spring Boot Controllers  (/api/users, /api/license, /api/rto)
-     │
-     ▼
-Service Layer  (business logic, validations)
-     │
-     ▼
-DAO Layer  (reads/writes to in-memory HashMaps)
-     │
-     ▼
-Two in-memory stores (live only while the server is running)
-  ┌─────────────────────────────┐   ┌────────────────────────────────┐
-  │  userStore                  │   │  applicationStore               │
-  │  Map<String, User>          │   │  Map<String, Application>       │
-  │  key = email                │   │  key = applicationNumber        │
-  └─────────────────────────────┘   └────────────────────────────────┘
-```
+### Frontend
 
-> **Important:** Because there is no database, all data is lost when the Spring Boot server restarts.
+- `frontend/src/App.jsx`: Defines React routes and role-protected pages.
+- `frontend/src/context/AuthContext.jsx`: Stores the logged-in user in `localStorage` as `vlp_user`.
+- `frontend/src/api/api.js`: Central Axios API wrapper for all backend calls.
+- `frontend/src/pages/Auth.jsx`: Login/register page. Sends `role` to backend so applicant and RTO accounts cannot be mixed.
+- `frontend/src/pages/applicant/ApplyLL.jsx`: Learner License application form.
+- `frontend/src/pages/applicant/ApplyDL.jsx`: Driving License application form. Checks approved LL before showing the form.
+- `frontend/src/pages/applicant/ViewLLStatus.jsx`: Applicant checks LL status by application number.
+- `frontend/src/pages/applicant/ViewDLStatus.jsx`: Applicant checks DL status and sees license number after RTO manually generates it.
+- `frontend/src/pages/applicant/ScheduleTest.jsx`: Applicant schedules the driving test for a DL application.
+- `frontend/src/pages/rto/LLApplications.jsx`: RTO reviews LL applications.
+- `frontend/src/pages/rto/DLApplications.jsx`: RTO reviews DL applications and approves only after PASS.
+- `frontend/src/pages/rto/ScheduledTests.jsx`: RTO marks driving test PASS/FAIL.
+- `frontend/src/pages/rto/ApplicantManagement.jsx`: Manual applicant record management. Mostly for admin corrections, not required for normal application submission.
+- `frontend/src/pages/rto/LicenseGeneration.jsx`: RTO manually generates a DL number for an approved DL application.
 
----
+### Backend
 
-## Where Data Is Stored
+- `VehicleLicenseApplication.java`: Spring Boot entry point.
+- `config/AppConfig.java`: Creates service/DAO beans and seeds the default RTO user.
+- `config/CorsConfig.java`: Allows frontend requests from Vite.
+- `controller/UserController.java`: `/api/users` register/login endpoints.
+- `controller/LicenseController.java`: `/api/license` LL/DL apply, status, schedule, generate license endpoints.
+- `controller/RTOOfficerController.java`: `/api/rto` approval, rejection, test-result, application-list endpoints.
+- `controller/ApplicantController.java`: `/api/applicants` CRUD endpoints for Applicant Management.
+- `service/impl/UserServiceImpl.java`: User registration/login service wrapper.
+- `service/impl/LicenseServiceImpl.java`: LL/DL application business logic and license number generation.
+- `service/impl/RTOOfficerServiceImpl.java`: RTO approval/rejection/test-result rules.
+- `service/impl/ApplicantServiceImpl.java`: Applicant CRUD plus duplicate email/Aadhaar checks.
+- `dao/impl/UserDaoImpl.java`: Persists users through `UserRepository`; validates password and role.
+- `dao/impl/LicenseDaoImpl.java`: Creates LL/DL applications, reuses existing applicants, saves applications to MySQL, and keeps an in-memory cache for existing report/RTO code.
+- `dao/impl/RTOOfficerDaoImpl.java`: Reads/writes applications, syncing updates back to MySQL.
+- `repository/UserRepository.java`: JPA repository for `users`.
+- `repository/ApplicantRepository.java`: JPA repository for `applicants`.
+- `repository/ApplicationRepository.java`: JPA repository for `applications`.
+- `repository/LicenseRepository.java`: JPA repository for `driving_licenses`.
+- `model/User.java`: Login account with `email`, `password`, and `role`.
+- `model/Applicant.java`: Applicant personal data, Aadhaar/email uniqueness, DOB validation, vehicle type, and license numbers.
+- `model/Application.java`: LL/DL application record, status, payment, test date/result, applicant relation.
+- `model/DrivingLicense.java`: Issued DL number record.
+- `exception/GlobalExceptionHandler.java`: Converts validation, duplicate, and not-found errors into clean API responses.
 
-### 1. `userStore` — inside `UserDaoImpl`
-- Type: `HashMap<String, User>`
-- Key: user's email address
-- Value: `User` object (`email`, `password`)
-- Created when: user calls **Register**
-- Used when: user calls **Login** (password compared directly — no hashing)
+## Database Tables
 
-### 2. `applicationStore` — inside `LicenseDaoImpl`
-- Type: `HashMap<String, Application>`
-- Key: application number (e.g. `LL-1001`, `DL-2001`)
-- Value: `Application` object (see fields below)
-- **Shared** with `RTOOfficerDaoImpl` via `AppConfig` — both DAOs point to the **same** HashMap instance, so when an applicant submits and an RTO officer approves, they are reading/writing the same object in memory
+Hibernate creates/updates these tables in MySQL:
 
-### Application Object Fields
-| Field             | Type              | Set by                          |
-|-------------------|-------------------|---------------------------------|
-| `applicationNumber` | String          | Auto-generated (LL-1001+, DL-2001+) |
-| `type`            | `LL` or `DL`      | Backend on create               |
-| `status`          | `PENDING` → `APPROVED` / `REJECTED` | RTO officer |
-| `applicant`       | `Applicant` object | Submitted by user in form      |
-| `testDate`        | Date              | Set by applicant (Schedule Test)|
-| `testResult`      | `PASS` / `FAIL` / null | Set by RTO officer         |
-| `amountPaid`      | double            | Hardcoded (LL ₹200, DL ₹500)   |
-| `paymentStatus`   | String            | Hardcoded `PAID` on submit      |
-| `modeOfPayment`   | String            | Hardcoded `Online`              |
+- `users`: login accounts. Primary key is `email`. Includes `role` (`applicant` or `rto`).
+- `applicants`: personal applicant records. Created automatically from LL/DL application submission or manually from RTO Applicant Management.
+- `applications`: LL/DL application records. Primary key is application number such as `LL-1001` or `DL-2001`.
+- `driving_licenses`: generated DL numbers after RTO uses Generate License.
 
----
+## How Applicant Records Are Created
 
-## Authentication — How It Works
+Applicant records are created in two ways:
 
-There is **no JWT or session token**. The backend simply returns `"Login successful"` or `"Invalid credentials"`.  
-The frontend stores the logged-in user in **localStorage** under the key `vlp_user`.
+1. Automatically during LL/DL submission.
+   - Applicant fills Apply LL or Apply DL.
+   - Frontend sends an `Application` payload containing nested `applicant` details.
+   - `LicenseDaoImpl` checks existing applicant by Aadhaar first, then email.
+   - If found, it updates/reuses that applicant row.
+   - If not found, it creates a new row in `applicants`.
+   - The new application row is saved in `applications` and linked to the applicant.
 
-```
-User enters email + role on login form
-       │
-       ▼
-POST /api/users/login  { email, password }
-       │
-Backend checks userStore → returns "Login successful" or error
-       │
-       ▼
-Frontend stores in localStorage:
-  { email: "him@nav.com", role: "applicant" }   ← or "rto"
-       │
-       ▼
-React AuthContext reads localStorage on every page load
-Role-based routing: applicant → /app/dashboard
-                    rto       → /app/rto-dashboard
-```
+2. Manually in RTO Applicant Management.
+   - RTO can create or edit applicant records directly.
+   - This is useful for corrections/admin work.
+   - It is not required for the normal applicant flow.
+   - If the Aadhaar or email already exists, backend returns a clean duplicate message and asks the user to edit the existing record.
 
-**RTO accounts** are pre-registered manually (same `/register` endpoint, role passed as a field).  
-The frontend's register form hard-codes `role: "applicant"` for new sign-ups.
+Your screenshot error happened because an applicant row already existed from an application submission, then Applicant Management tried to create a second row with the same Aadhaar number. Aadhaar is unique, so MySQL rejected it. The backend now checks this first and returns a readable message.
 
----
+## Authentication Flow
 
-## Complete Application Workflow (Step by Step)
+1. Applicant registration:
+   - `Auth.jsx` sends `POST /api/users/register` with `email`, `password`, `role: "applicant"`.
+   - `UserDaoImpl` stores it in `users`.
 
-### Step 1 — Register & Login
-```
-Applicant                      Backend (UserController)
-    │                                │
-    │── POST /api/users/register ───►│  stores {email, password} in userStore
-    │◄─ "User account created" ──────│
-    │
-    │── POST /api/users/login ──────►│  looks up email in userStore, checks password
-    │◄─ "Login successful" ──────────│
-    │
-Frontend saves to localStorage: { email, role: "applicant" }
-```
+2. RTO login:
+   - `AppConfig` seeds `rto@vlp.com` with role `rto`.
+   - Public RTO registration is blocked.
 
----
+3. Login:
+   - Frontend sends `email`, `password`, and intended `role`.
+   - Backend validates email, password, and role together.
+   - Applicant credentials cannot enter RTO pages, and RTO credentials cannot enter applicant pages.
+   - Frontend stores the authenticated user in `localStorage`.
 
-### Step 2 — Apply for Learner License (LL)
-```
-Applicant fills form → POST /api/license/ll/apply
-   payload: { applicant: {...}, modeOfPayment, amountPaid, paymentStatus }
-                │
-                ▼
-LicenseController → LicenseServiceImpl → LicenseDaoImpl
-   - generates applicationNumber = "LL-" + (1000 + n)
-   - sets status = PENDING
-   - puts into applicationStore["LL-1001"] = application
-                │
-                ▼
-Returns: { applicationNumber: "LL-1001", status: "PENDING", ... }
-Applicant saves the application number to check status later.
-```
+## Learner License Workflow
 
----
+1. Applicant fills `ApplyLL.jsx`.
+2. Frontend calls `POST /api/license/ll/apply`.
+3. `LicenseController` validates request with `@Valid`.
+4. `LicenseServiceImpl.applyForLL` sets type `LL` and date.
+5. `LicenseDaoImpl.createLLRequest`:
+   - generates `LL-1001`, `LL-1002`, etc.
+   - sets status `PENDING`.
+   - creates or reuses applicant.
+   - saves application to MySQL.
+6. RTO opens `LLApplications.jsx`.
+7. Frontend calls `GET /api/rto/applications` and filters type `LL`.
+8. RTO approves/rejects using:
+   - `PUT /api/rto/ll/approve/{appNo}`
+   - `PUT /api/rto/ll/reject/{appNo}`
+9. Status changes are saved to MySQL.
+10. Applicant checks status in `ViewLLStatus.jsx`.
 
-### Step 3 — RTO Reviews LL Application
-```
-RTO Officer opens "LL Applications" page
-   │
-   ├── GET /api/rto/applications
-   │     RTOOfficerDaoImpl reads the same applicationStore
-   │     returns all Application objects as a list
-   │     Frontend filters type === "LL"
-   │
-   ├── RTO clicks a row → sees applicant details
-   │
-   ├── Clicks APPROVE → PUT /api/rto/ll/approve/LL-1001
-   │     Sets application.status = APPROVED
-   │     Saves back to applicationStore
-   │
-   └── Clicks REJECT → PUT /api/rto/ll/reject/LL-1001
-         Sets application.status = REJECTED
-```
+## Driving License Workflow
 
----
+1. Applicant opens `ApplyDL.jsx`.
+2. Frontend checks LL gate with `GET /api/license/ll/check-by-email?email=...`.
+3. If no approved LL exists, DL form is blocked.
+4. If approved LL exists, applicant submits DL form.
+5. Backend creates `DL-2001`, `DL-2002`, etc. with status `PENDING`.
+6. Applicant schedules test from `ScheduleTest.jsx`.
+7. RTO marks PASS/FAIL in `ScheduledTests.jsx`.
+8. RTO can approve DL only if test result is `PASS`.
+9. DL approval only changes application status to `APPROVED`; it does not create the license number.
+10. RTO manually generates DL number from `LicenseGeneration.jsx`.
+11. `LicenseServiceImpl.generateLicenseNumber`:
+    - requires approved DL application.
+    - generates a unique DL number.
+    - stores it on the linked applicant.
+    - creates a row in `driving_licenses`.
+12. Applicant checks `ViewDLStatus.jsx`.
+    - If approved but no license number exists, it shows "DL creation is in progress."
+    - After generation, it shows the DL number.
 
-### Step 4 — Check LL Status (Applicant)
-```
-Applicant enters their application number
-   │
-   ├── GET /api/license/ll/status/LL-1001
-   │     LicenseDaoImpl.getApplicationById("LL-1001")
-   │     Returns the Application object (with current status)
-   │
-   └── Frontend displays: PENDING / APPROVED / REJECTED
+## Data Storage and Retrieval
+
+Normal runtime data flow:
+
+```text
+React page
+  -> api.js Axios call
+  -> Spring controller
+  -> service
+  -> DAO/repository
+  -> MySQL table
 ```
 
----
+Application retrieval:
 
-### Step 5 — Apply for DL (Gate: LL must be APPROVED)
-```
-Applicant opens "Apply for DL" page
-   │
-   ├── GET /api/license/ll/check-by-email?email=him@nav.com
-   │     LicenseDaoImpl searches applicationStore for:
-   │       type == LL  AND  applicant.email == him@nav.com
-   │     Prefers the APPROVED one if multiple exist
-   │     Returns: { status: "APPROVED", applicationNumber: "LL-1001" }
-   │
-   ├── If status != APPROVED → frontend shows a RED BLOCK BANNER
-   │     "You cannot apply for DL yet" (with reason)
-   │     Form is not shown at all.
-   │
-   └── If status == APPROVED → form is shown
-         POST /api/license/dl/apply
-           - generates applicationNumber = "DL-" + (2000 + n)
-           - sets status = PENDING, type = DL
-           - stores in applicationStore["DL-2001"]
-```
+- `LicenseDaoImpl` loads existing applications from MySQL at startup into `applicationStore`.
+- New LL/DL submissions are written to both `applicationStore` and `applications`.
+- RTO reads all applications through `RTOOfficerDaoImpl.getAllApplications`, which refreshes from `ApplicationRepository`.
+- RTO changes are saved back with `ApplicationRepository.save`.
+- Reports still read the shared `applicationStore`, which is kept in sync by the DAO layer.
 
----
+Applicant retrieval:
 
-### Step 6 — Schedule Driving Test (Applicant)
-```
-Applicant enters DL application number + chooses a date/time
-   │
-   └── PUT /api/license/dl/DL-2001/schedule-test
-         body: { testDate: "2026-07-10T10:00:00" }
-         LicenseDaoImpl sets application.testDate = provided date
-         Saves back to applicationStore
-```
+- Applicant Management uses `ApplicantController` -> `ApplicantServiceImpl` -> `ApplicantRepository`.
+- LL/DL submission uses `LicenseDaoImpl` to find applicant by Aadhaar/email and reuse the row.
+- This prevents duplicate applicant rows for the same person.
 
----
+License retrieval:
 
-### Step 7 — RTO Marks Test Result
-```
-RTO Officer opens "Scheduled Tests" page
-   │
-   ├── GET /api/rto/applications
-   │     Frontend filters: type === "DL" AND testDate != null
-   │
-   ├── Clicks PASS → PUT /api/rto/test/pass/DL-2001
-   │     RTOOfficerDaoImpl sets application.testResult = "PASS"
-   │
-   └── Clicks FAIL → PUT /api/rto/test/fail/DL-2001
-         RTOOfficerDaoImpl sets application.testResult = "FAIL"
-```
+- Generated DL numbers are stored in `driving_licenses`.
+- `ViewLicenseDetails.jsx` fetches by DL number through `LicenseController`.
+- `ViewDLStatus.jsx` fetches by application number and displays the generated license number if present on the applicant.
 
----
+## Important Business Rules
 
-### Step 8 — RTO Approves / Rejects DL
-```
-RTO Officer opens "DL Applications" page
-   │
-   ├── Clicks a row → sees applicant details + test date + test result
-   │
-   ├── APPROVE button is DISABLED if testResult != "PASS"
-   │     (enforced on both frontend and backend)
-   │
-   ├── Clicks APPROVE → PUT /api/rto/dl/approve/DL-2001
-   │     Backend checks: if testResult != "PASS" → returns error
-   │     Otherwise: sets application.status = APPROVED
-   │
-   └── Clicks REJECT → PUT /api/rto/dl/reject/DL-2001
-         Sets application.status = REJECTED (no test requirement)
-```
+- Applicant must be at least 18 years old for LL/DL submission.
+- Phone must be exactly 10 digits.
+- Aadhaar must be exactly 12 digits.
+- Address must be at least 5 characters.
+- Email and Aadhaar are unique in `applicants`.
+- Applicant cannot apply for DL unless they have an approved LL.
+- DL cannot be approved unless driving test result is `PASS`.
+- DL number is generated only from the RTO Generate License page, not automatically during approval.
+- Passwords are stored as plain text for this training project. This is not production-safe.
 
----
+## Main API Endpoints
 
-### Step 9 — Check DL Status (Applicant)
-```
-Applicant enters DL application number
-   └── GET /api/license/dl/status/DL-2001
-         Returns Application object with current status + testResult
-         Frontend shows status card with all details
-```
-
----
-
-## Shared Store — Why It Matters
-
-```
-AppConfig.java (Spring @Configuration)
-
-  LicenseDaoImpl licenseDaoImpl = new LicenseDaoImpl();
-       │
-       │  licenseDaoImpl.getApplicationStore() ← returns the HashMap reference
-       ▼
-  RTOOfficerDaoImpl rtoDao = new RTOOfficerDaoImpl( ← receives the SAME HashMap )
-
-Result:
-  Applicant submits LL via LicenseDaoImpl    → writes to applicationStore["LL-1001"]
-  RTO reads applications via RTOOfficerDaoImpl → reads the SAME applicationStore["LL-1001"]
-  RTO approves via RTOOfficerDaoImpl          → mutates the SAME object in memory
-  Applicant checks status via LicenseDaoImpl  → reads the updated object
-```
-
-Without this sharing, the RTO and applicant would be looking at two separate, disconnected stores.
-
----
-
-## URL / Route Map
-
-### Backend REST Endpoints
-| Method | URL                                         | What it does                            |
-|--------|---------------------------------------------|-----------------------------------------|
-| POST   | `/api/users/register`                       | Register a new user                     |
-| POST   | `/api/users/login`                          | Login                                   |
-| POST   | `/api/license/ll/apply`                     | Submit LL application                   |
-| GET    | `/api/license/ll/status/{appNo}`            | Check LL status                         |
-| GET    | `/api/license/ll/check-by-email?email=`     | Gate check before DL application        |
-| POST   | `/api/license/dl/apply`                     | Submit DL application                   |
-| PUT    | `/api/license/dl/{appNo}/schedule-test`     | Book driving test slot                  |
-| GET    | `/api/license/dl/status/{appNo}`            | Check DL status                         |
-| PUT    | `/api/rto/ll/approve/{appNo}`               | RTO: approve LL                         |
-| PUT    | `/api/rto/ll/reject/{appNo}`                | RTO: reject LL                          |
-| PUT    | `/api/rto/dl/approve/{appNo}`               | RTO: approve DL (requires PASS)         |
-| PUT    | `/api/rto/dl/reject/{appNo}`                | RTO: reject DL                          |
-| GET    | `/api/rto/applications`                     | List all applications                   |
-| GET    | `/api/rto/applications/search?q=`           | Search applications                     |
-| PUT    | `/api/rto/test/pass/{appNo}`                | RTO: mark driving test PASS             |
-| PUT    | `/api/rto/test/fail/{appNo}`                | RTO: mark driving test FAIL             |
-
-### Frontend Routes
-| Path                            | Role      | Page                              |
-|---------------------------------|-----------|-----------------------------------|
-| `/`                             | Anyone    | Landing page                      |
-| `/auth`                         | Anyone    | Login / Register                  |
-| `/app/dashboard`                | Applicant | Dashboard with action cards       |
-| `/app/apply-ll`                 | Applicant | Apply for Learner License         |
-| `/app/ll-status`                | Applicant | Check LL status                   |
-| `/app/apply-dl`                 | Applicant | Apply for DL (blocked if no LL)   |
-| `/app/schedule-test`            | Applicant | Schedule driving test             |
-| `/app/dl-status`                | Applicant | Check DL status                   |
-| `/app/rto-dashboard`            | RTO       | RTO dashboard with stats          |
-| `/app/rto/ll-applications`      | RTO       | Review all LL applications        |
-| `/app/rto/dl-applications`      | RTO       | Review all DL applications        |
-| `/app/rto/scheduled-tests`      | RTO       | Mark driving test PASS / FAIL     |
-| `/app/rto/applications`         | RTO       | All applications (read-only view) |
-| `/app/rto/search`               | RTO       | Search by name / email / app no   |
-
----
-
-## Key Business Rules
-
-1. **DL application is blocked** unless the applicant has an `APPROVED` LL — enforced at both frontend (block banner) and backend (`checkLLByEmail` endpoint).
-2. **DL cannot be approved** unless `testResult == "PASS"` — enforced at both frontend (Approve button is disabled) and backend (`RTOOfficerServiceImpl.approveDrivingLicense` returns an error if not PASS).
-3. **Test result is final** — once PASS or FAIL is set, the button disappears from the Scheduled Tests page (no override UI).
-4. **Passwords are stored in plain text** — no hashing. Acceptable for this academic project, not for production.
-5. **No JWT / session management** — role is stored in localStorage; anyone can edit it in DevTools. Again, acceptable for academic scope.
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| POST | `/api/users/register` | Applicant registration |
+| POST | `/api/users/login` | Applicant/RTO login with role validation |
+| POST | `/api/license/ll/apply` | Submit LL application |
+| GET | `/api/license/ll/status/{appNo}` | Check LL status |
+| GET | `/api/license/ll/check-by-email?email=` | Check approved LL before DL |
+| POST | `/api/license/dl/apply` | Submit DL application |
+| PUT | `/api/license/dl/{appNo}/schedule-test` | Schedule driving test |
+| GET | `/api/license/dl/status/{appNo}` | Check DL status/license generation progress |
+| POST | `/api/license/generate/{appNo}` | Generate DL number |
+| GET | `/api/license/{licenseNumber}` | View issued license details |
+| GET | `/api/rto/applications` | List all applications |
+| PUT | `/api/rto/ll/approve/{appNo}` | Approve LL |
+| PUT | `/api/rto/ll/reject/{appNo}` | Reject LL |
+| PUT | `/api/rto/test/pass/{appNo}` | Mark test PASS |
+| PUT | `/api/rto/test/fail/{appNo}` | Mark test FAIL |
+| PUT | `/api/rto/dl/approve/{appNo}` | Approve DL after PASS |
+| PUT | `/api/rto/dl/reject/{appNo}` | Reject DL |
+| GET | `/api/applicants` | List applicant records |
+| POST | `/api/applicants` | Manually create applicant |
+| PUT | `/api/applicants/{id}` | Update applicant |
+| DELETE | `/api/applicants/{id}` | Delete applicant |

@@ -2,6 +2,7 @@ package com.online.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import com.online.validation.MinAge;
 
 import java.time.LocalDate;
 
@@ -43,8 +44,11 @@ public class Applicant {
     private String aadhaarNumber;
 
     @NotNull(message = "Date of birth is required")
+    @MinAge(value = 18, message = "Applicant must be at least 18 years old")
     @Column(nullable = false)
     private LocalDate dateOfBirth;
+
+    private String vehicleType;
 
     @Column(unique = true)
     private String learnerLicenseNumber;
@@ -114,6 +118,8 @@ public class Applicant {
     public void setAadhaarNumber(String aadhaarNumber) { this.aadhaarNumber = aadhaarNumber; }
     public LocalDate getDateOfBirth() { return dateOfBirth; }
     public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public String getVehicleType() { return vehicleType; }
+    public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
     public String getLearnerLicenseNumber() { return learnerLicenseNumber; }
     public void setLearnerLicenseNumber(String learnerLicenseNumber) { this.learnerLicenseNumber = learnerLicenseNumber; }
     public String getDrivingLicenseNumber() { return drivingLicenseNumber; }

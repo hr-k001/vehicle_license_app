@@ -8,6 +8,8 @@ import com.online.dao.impl.UserDaoImpl;
 import com.online.model.User;
 import com.online.repository.LicenseRepository;
 import com.online.repository.ApplicantRepository;
+import com.online.repository.ApplicationRepository;
+import com.online.repository.UserRepository;
 import com.online.service.*;
 import com.online.service.impl.*;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -18,21 +20,21 @@ import org.springframework.context.annotation.Configuration;
 public class AppConfig {
 
     @Bean
-    public UserDao userDao() {
-        UserDaoImpl dao = new UserDaoImpl();
+    public UserDao userDao(UserRepository userRepository) {
+        UserDaoImpl dao = new UserDaoImpl(userRepository);
         // Pre-seed default RTO officer account
-        dao.createUser(new User("rto@vlp.com", "rto123"));
+        dao.createUser(new User("rto@vlp.com", "rto123", "rto"));
         return dao;
     }
 
     @Bean
-    public LicenseDaoImpl licenseDaoImpl() {
-        return new LicenseDaoImpl();
+    public LicenseDaoImpl licenseDaoImpl(ApplicationRepository applicationRepository, ApplicantRepository applicantRepository) {
+        return new LicenseDaoImpl(applicationRepository, applicantRepository);
     }
 
     @Bean
-    public RTOOfficerDao rtoOfficerDao(LicenseDaoImpl licenseDaoImpl) {
-        return new RTOOfficerDaoImpl(licenseDaoImpl.getApplicationStore());
+    public RTOOfficerDao rtoOfficerDao(LicenseDaoImpl licenseDaoImpl, ApplicationRepository applicationRepository) {
+        return new RTOOfficerDaoImpl(licenseDaoImpl.getApplicationStore(), applicationRepository);
     }
 
     @Bean

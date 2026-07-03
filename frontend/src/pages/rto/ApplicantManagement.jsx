@@ -9,6 +9,7 @@ const emptyForm = {
   address: '',
   aadhaarNumber: '',
   dateOfBirth: '',
+  vehicleType: '',
   learnerLicenseNumber: '',
   drivingLicenseNumber: '',
 };
@@ -77,6 +78,7 @@ export default function ApplicantManagement() {
       address: applicant.address || '',
       aadhaarNumber: applicant.aadhaarNumber || '',
       dateOfBirth: applicant.dateOfBirth || '',
+      vehicleType: applicant.vehicleType || '',
       learnerLicenseNumber: applicant.learnerLicenseNumber || '',
       drivingLicenseNumber: applicant.drivingLicenseNumber || '',
     });
@@ -134,6 +136,15 @@ export default function ApplicantManagement() {
               <div className="form-group">
                 <label>Address</label>
                 <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label>Vehicle Type</label>
+                <select value={form.vehicleType} onChange={(e) => setForm({ ...form, vehicleType: e.target.value })}>
+                  <option value="">Select vehicle type</option>
+                  <option>Two Wheeler</option>
+                  <option>Light Motor Vehicle</option>
+                  <option>Heavy Motor Vehicle</option>
+                </select>
               </div>
               <div className="form-group">
                 <label>Learner License Number</label>

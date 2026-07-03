@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 // US-003, US-004 (Mansidak) | US-007, US-008, US-009 (Himanshu)
@@ -67,11 +68,21 @@ public class LicenseController {
     // US-009
     @GetMapping("/dl/status/{applicationNumber}")
     public ResponseEntity<Map<String, String>> viewDLStatus(@PathVariable String applicationNumber) {
-        ApplicationStatus status = licenseService.viewDLStatus(applicationNumber);
-        if (status == null) {
+        Application application = licenseService.getApplicationById(applicationNumber);
+        if (application == null || application.getType() != com.online.model.ApplicationType.DL) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(Map.of("applicationNumber", applicationNumber, "status", status.name()));
+
+        Map<String, String> body = new HashMap<>();
+        body.put("applicationNumber", applicationNumber);
+        body.put("status", application.getStatus().name());
+        if (application.getTestDate() != null) {
+            body.put("testDate", application.getTestDate().toInstant().toString());
+        }
+        if (application.getApplicant() != null && application.getApplicant().getDrivingLicenseNumber() != null) {
+            body.put("licenseNumber", application.getApplicant().getDrivingLicenseNumber());
+        }
+        return ResponseEntity.ok(body);
     }
 
     // Check LL approval status by email (used before DL submission)
@@ -111,5 +122,10 @@ public class LicenseController {
         var details = licenseService.viewLicenseDetails(applicationNumber);
         if (details == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(details);
+    }
+
+    @GetMapping("/progress")
+    public ResponseEntity<Map<String, Boolean>> getApplicantProgress(@RequestParam String email) {
+        return ResponseEntity.ok(licenseService.getApplicantProgress(email));
     }
 }

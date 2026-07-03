@@ -9,7 +9,9 @@ import com.online.repository.ApplicantRepository;
 import com.online.util.LicenseNumberGenerator;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Date;
+import java.util.Map;
 
 public class LicenseServiceImpl implements com.online.service.LicenseService {
 
@@ -78,6 +80,11 @@ public class LicenseServiceImpl implements com.online.service.LicenseService {
     }
 
     @Override
+    public Application getApplicationById(String applicationNumber) {
+        return licenseDao.getApplicationById(applicationNumber);
+    }
+
+    @Override
     public Application getLLApplicationByEmail(String email) {
         return licenseDao.getLLApplicationByEmail(email);
     }
@@ -91,6 +98,9 @@ public class LicenseServiceImpl implements com.online.service.LicenseService {
             return "Invalid application type. Only DL applications can have license numbers generated";
         if (app.getStatus() != ApplicationStatus.APPROVED)
             return "Application must be approved before generating license number";
+        if (app.getApplicant() != null && app.getApplicant().getDrivingLicenseNumber() != null) {
+            return "License generated successfully: " + app.getApplicant().getDrivingLicenseNumber();
+        }
 
         String licenseNumber = generateUniqueLicenseNumber();
         if (app.getApplicant() != null) {
@@ -116,6 +126,8 @@ public class LicenseServiceImpl implements com.online.service.LicenseService {
                     applicant = applicantRepository.save(applicant);
                     app.setApplicant(applicant);
                 }
+                applicant.setDrivingLicenseNumber(licenseNumber);
+                applicantRepository.save(applicant);
             }
 
             DrivingLicense drivingLicense = DrivingLicense.builder()
@@ -164,5 +176,45 @@ public class LicenseServiceImpl implements com.online.service.LicenseService {
                         .status("ISSUED")
                         .build())
                 .orElse(null);
+    }
+
+    @Override
+    public Map<String, Boolean> getApplicantProgress(String email) {
+        Map<String, Boolean> progress = new HashMap<>();
+        progress.put("registered", email != null && !email.trim().isEmpty());
+        progress.put("llApplied", false);
+        progress.put("llApproved", false);
+        progress.put("dlApplied", false);
+        progress.put("testBooked", false);
+        progress.put("dlIssued", false);
+
+        if (email == null || email.trim().isEmpty()) {
+            return progress;
+        }
+
+        String lower = email.trim().toLowerCase();
+        for (Application app : licenseDao.getApplicationStore().values()) {
+            if (app.getApplicant() == null || app.getApplicant().getEmail() == null) continue;
+            if (!lower.equals(app.getApplicant().getEmail().trim().toLowerCase())) continue;
+
+            if (app.getType() == ApplicationType.LL) {
+                progress.put("llApplied", true);
+                if (app.getStatus() == ApplicationStatus.APPROVED) {
+                    progress.put("llApproved", true);
+                }
+            }
+
+            if (app.getType() == ApplicationType.DL) {
+                progress.put("dlApplied", true);
+                if (app.getTestDate() != null) {
+                    progress.put("testBooked", true);
+                }
+                if (app.getApplicant().getDrivingLicenseNumber() != null) {
+                    progress.put("dlIssued", true);
+                }
+            }
+        }
+
+        return progress;
     }
 }
