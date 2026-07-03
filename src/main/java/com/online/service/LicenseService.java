@@ -23,6 +23,8 @@ public interface LicenseService {
     // US-009
     ApplicationStatus viewDLStatus(String applicationNumber);
 
+    String getDrivingLicenseNumberForApplication(String applicationNumber);
+
     // Gate check before DL submission
     Application getLLApplicationByEmail(String email);
 

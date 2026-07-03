@@ -1,5 +1,6 @@
 package com.online.model;
 
+import com.online.validation.MinAge;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
@@ -43,6 +44,7 @@ public class Applicant {
     private String aadhaarNumber;
 
     @NotNull(message = "Date of birth is required")
+    @MinAge(18)
     @Column(nullable = false)
     private LocalDate dateOfBirth;
 

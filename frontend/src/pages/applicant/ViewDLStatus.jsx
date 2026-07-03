@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import { getDLStatus } from '../../api/api';
+import { useAuth } from '../../context/AuthContext';
+import { updateJourneyProgress } from '../../utils/journeyProgress';
 
 const badgeClass = { PENDING: 'badge-pending', APPROVED: 'badge-approved', REJECTED: 'badge-rejected', SCHEDULED: 'badge-info' };
 const statusIcon = { PENDING: '⏳', APPROVED: '✅', REJECTED: '❌', SCHEDULED: '📅' };
@@ -12,6 +14,7 @@ const statusMsg  = {
 };
 
 export default function ViewDLStatus() {
+  const { user } = useAuth();
   const [appNo, setAppNo]   = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -23,6 +26,12 @@ export default function ViewDLStatus() {
     try {
       const res = await getDLStatus(appNo.trim());
       setResult(res.data);
+      if (user?.email) {
+        updateJourneyProgress(user.email, {
+          applyDL: true,
+          dlIssued: res.data?.status === 'APPROVED',
+        });
+      }
     } catch (err) {
       if (err.response?.status === 404) setError('No DL application found with that number.');
       else setError('Could not fetch status. Ensure the backend is running.');
@@ -63,6 +72,11 @@ export default function ViewDLStatus() {
               {result.testDate && (
                 <div style={{ marginTop: 8, padding: '8px 12px', background: '#eff6ff', borderRadius: 6, fontSize: '0.83rem' }}>
                   Test Date: <strong>{new Date(result.testDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong>
+                </div>
+              )}
+              {result.licenseNumber && (
+                <div style={{ marginTop: 8, padding: '8px 12px', background: '#ecfdf5', borderRadius: 6, fontSize: '0.9rem', color: '#065f46' }}>
+                  Driving License Number: <strong>{result.licenseNumber}</strong>
                 </div>
               )}
               <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: 8 }}>

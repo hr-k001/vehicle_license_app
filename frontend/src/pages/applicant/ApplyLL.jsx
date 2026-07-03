@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import { applyLL } from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
+import { updateJourneyProgress } from '../../utils/journeyProgress';
 
 const emptyForm = (email) => ({
   fullName: '', phone: '', email: email || '', address: '', aadhaarNumber: '', dateOfBirth: '', vehicleType: ''
@@ -13,12 +14,50 @@ export default function ApplyLL() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  const getAge = (dobValue) => {
+    if (!dobValue) return null;
+    const dob = new Date(dobValue);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age -= 1;
+    }
+    return age;
+  };
+
+  const validateForm = (values) => {
+    const errors = {};
+    if (!values.fullName.trim()) errors.fullName = 'Full Name is required.';
+    if (!values.email.trim()) errors.email = 'Email address is required.';
+    else if (!/^\S+@\S+\.\S+$/.test(values.email.trim())) errors.email = 'Enter a valid email address.';
+    if (!values.phone.trim()) errors.phone = 'Phone number is required.';
+    else if (!/^\d{10}$/.test(values.phone.trim())) errors.phone = 'Phone number must be 10 digits.';
+    if (!values.address.trim()) errors.address = 'Address is required.';
+    if (!values.aadhaarNumber.trim()) errors.aadhaarNumber = 'Aadhaar number is required.';
+    else if (!/^\d{12}$/.test(values.aadhaarNumber.trim())) errors.aadhaarNumber = 'Aadhaar number must be 12 digits.';
+    if (!values.dateOfBirth) {
+      errors.dateOfBirth = 'Date of Birth is required.';
+    } else if (getAge(values.dateOfBirth) < 18) {
+      errors.dateOfBirth = 'Applicant must be at least 18 years old.';
+    }
+    if (!values.vehicleType) errors.vehicleType = 'Vehicle Type is required.';
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); setError(''); setResult(null);
+    const validationErrors = validateForm(form);
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError('Please fix the form errors before submitting.');
+      return;
+    }
+    setLoading(true); setError(''); setResult(null); setFieldErrors({});
     try {
       const payload = {
         applicant: { ...form },
@@ -27,6 +66,9 @@ export default function ApplyLL() {
       const res = await applyLL(payload);
       setResult(res.data);
       setForm(emptyForm(user?.email));
+      if (user?.email) {
+        updateJourneyProgress(user.email, { applyLL: true });
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Submission failed. Please check your details.');
     } finally { setLoading(false); }
@@ -58,26 +100,32 @@ export default function ApplyLL() {
               <div className="form-group">
                 <label>Full Name *</label>
                 <input placeholder="e.g. Himanshu Kumar" value={form.fullName} onChange={e => set('fullName', e.target.value)} required />
+                {fieldErrors.fullName && <div className="field-error">{fieldErrors.fullName}</div>}
               </div>
               <div className="form-group">
                 <label>Email Address *</label>
                 <input type="email" placeholder="you@example.com" value={form.email} onChange={e => set('email', e.target.value)} required />
+                {fieldErrors.email && <div className="field-error">{fieldErrors.email}</div>}
               </div>
               <div className="form-group">
                 <label>Phone Number *</label>
                 <input placeholder="e.g. 9876543210" value={form.phone} onChange={e => set('phone', e.target.value)} required />
+                {fieldErrors.phone && <div className="field-error">{fieldErrors.phone}</div>}
               </div>
               <div className="form-group">
                 <label>Address *</label>
                 <input placeholder="e.g. 123 Main Street, Delhi" value={form.address} onChange={e => set('address', e.target.value)} required />
+                {fieldErrors.address && <div className="field-error">{fieldErrors.address}</div>}
               </div>
               <div className="form-group">
                 <label>Aadhaar Number *</label>
                 <input placeholder="e.g. 123456789012" value={form.aadhaarNumber} onChange={e => set('aadhaarNumber', e.target.value)} required />
+                {fieldErrors.aadhaarNumber && <div className="field-error">{fieldErrors.aadhaarNumber}</div>}
               </div>
               <div className="form-group">
                 <label>Date of Birth *</label>
                 <input type="date" value={form.dateOfBirth} onChange={e => set('dateOfBirth', e.target.value)} required />
+                {fieldErrors.dateOfBirth && <div className="field-error">{fieldErrors.dateOfBirth}</div>}
               </div>
               <div className="form-group">
                 <label>Vehicle Type *</label>
@@ -87,6 +135,7 @@ export default function ApplyLL() {
                   <option>Light Motor Vehicle</option>
                   <option>Heavy Motor Vehicle</option>
                 </select>
+                {fieldErrors.vehicleType && <div className="field-error">{fieldErrors.vehicleType}</div>}
               </div>
             </div>
 

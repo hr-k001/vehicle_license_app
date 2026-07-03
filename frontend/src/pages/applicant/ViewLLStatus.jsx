@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import { getLLStatus } from '../../api/api';
+import { useAuth } from '../../context/AuthContext';
+import { updateJourneyProgress } from '../../utils/journeyProgress';
 
 const badgeClass = { PENDING: 'badge-pending', APPROVED: 'badge-approved', REJECTED: 'badge-rejected' };
 const statusIcon = { PENDING: '⏳', APPROVED: '✅', REJECTED: '❌' };
@@ -11,6 +13,7 @@ const statusMsg  = {
 };
 
 export default function ViewLLStatus() {
+  const { user } = useAuth();
   const [appNo, setAppNo] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -22,6 +25,12 @@ export default function ViewLLStatus() {
     try {
       const res = await getLLStatus(appNo.trim());
       setResult(res.data);
+      if (user?.email) {
+        updateJourneyProgress(user.email, {
+          applyLL: true,
+          llApproval: res.data?.status === 'APPROVED',
+        });
+      }
     } catch (err) {
       if (err.response?.status === 404) setError('No application found with that number.');
       else setError('Could not fetch status. Ensure the backend is running.');

@@ -78,6 +78,15 @@ public class LicenseServiceImpl implements com.online.service.LicenseService {
     }
 
     @Override
+    public String getDrivingLicenseNumberForApplication(String applicationNumber) {
+        Application app = licenseDao.getApplicationById(applicationNumber);
+        if (app == null || app.getType() != ApplicationType.DL || app.getApplicant() == null) {
+            return null;
+        }
+        return app.getApplicant().getDrivingLicenseNumber();
+    }
+
+    @Override
     public Application getLLApplicationByEmail(String email) {
         return licenseDao.getLLApplicationByEmail(email);
     }

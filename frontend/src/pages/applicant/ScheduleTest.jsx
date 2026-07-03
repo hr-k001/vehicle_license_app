@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import { scheduleTest } from '../../api/api';
+import { useAuth } from '../../context/AuthContext';
+import { updateJourneyProgress } from '../../utils/journeyProgress';
 
 export default function ScheduleTest() {
+  const { user } = useAuth();
   const [appNo, setAppNo]   = useState('');
   const [testDate, setDate] = useState('');
   const [msg, setMsg]       = useState('');
@@ -19,6 +22,9 @@ export default function ScheduleTest() {
     try {
       const res = await scheduleTest(appNo.trim(), { testDate });
       setMsg(res.data.message);
+      if (user?.email) {
+        updateJourneyProgress(user.email, { bookTest: true, applyDL: true });
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Could not book the test slot.');
     } finally { setLoading(false); }

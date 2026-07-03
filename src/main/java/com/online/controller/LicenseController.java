@@ -71,6 +71,14 @@ public class LicenseController {
         if (status == null) {
             return ResponseEntity.notFound().build();
         }
+        String licenseNumber = licenseService.getDrivingLicenseNumberForApplication(applicationNumber);
+        if (licenseNumber != null && !licenseNumber.isBlank()) {
+            return ResponseEntity.ok(Map.of(
+                "applicationNumber", applicationNumber,
+                "status", status.name(),
+                "licenseNumber", licenseNumber
+            ));
+        }
         return ResponseEntity.ok(Map.of("applicationNumber", applicationNumber, "status", status.name()));
     }
 
